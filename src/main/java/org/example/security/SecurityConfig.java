@@ -23,33 +23,14 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.beans.factory.annotation.Value;
 
 import java.util.List;
-
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-public class SecurityConfig  {
+public class SecurityConfig {
 
     @Value("${frontend.host}")
     private String frontendHost;
 
-    @Bean
-    public BCryptPasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
-
-    @Bean
-    public UserDetailsService userDetailsService()
-    {
-        return new CustomUserDetailsService();
-    }
-
-    @Bean
-    public AuthenticationProvider authenticationProvider() {
-        var provider = new DaoAuthenticationProvider();
-        provider.setUserDetailsService(userDetailsService());
-        provider.setPasswordEncoder(passwordEncoder());
-        return provider;
-    }
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
@@ -62,20 +43,34 @@ public class SecurityConfig  {
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                 )
+                // Добавлен обработчик для API-ошибок
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            response.setContentType("application/json");
+                            response.getWriter().write("{\"error\":\"Unauthorized\"}");
+                        })
+                )
+                // Измененная formLogin конфигурация
                 .formLogin(form -> form
-                        .loginProcessingUrl("/api/login") // обработка логина по этому эндпоинту
+                        .loginProcessingUrl("/api/login")
                         .successHandler((request, response, authentication) -> {
-                            response.setStatus(HttpServletResponse.SC_OK); // при успешном логине возвращаем 200
+                            response.setStatus(HttpServletResponse.SC_OK);
+                            response.setContentType("application/json");
+                            response.getWriter().write("{\"status\":\"success\"}");
                         })
                         .failureHandler((request, response, exception) -> {
-                            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Неверный логин или пароль");
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            response.setContentType("application/json");
+                            response.getWriter().write("{\"error\":\"Invalid credentials\"}");
                         })
-                        .permitAll()
                 )
                 .logout(logout -> logout
                         .logoutUrl("/api/logout")
                         .logoutSuccessHandler((request, response, authentication) -> {
                             response.setStatus(HttpServletResponse.SC_OK);
+                            response.setContentType("application/json");
+                            response.getWriter().write("{\"status\":\"logged out\"}");
                         })
                         .invalidateHttpSession(true)
                         .deleteCookies("JSESSIONID")
@@ -83,16 +78,38 @@ public class SecurityConfig  {
 
         return http.build();
     }
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(List.of(frontendHost));
-        config.setAllowedMethods(List.of("*"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
+        config.setExposedHeaders(List.of("Authorization"));
         config.setAllowCredentials(true);
+        config.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
         return source;
+    }
+
+    // Остальные бины остаются без изменений
+    @Bean
+    public BCryptPasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public UserDetailsService userDetailsService() {
+        return new CustomUserDetailsService();
+    }
+
+    @Bean
+    public AuthenticationProvider authenticationProvider() {
+        var provider = new DaoAuthenticationProvider();
+        provider.setUserDetailsService(userDetailsService());
+        provider.setPasswordEncoder(passwordEncoder());
+        return provider;
     }
 }
