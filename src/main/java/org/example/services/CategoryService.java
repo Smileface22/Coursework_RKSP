@@ -34,7 +34,7 @@ public class CategoryService {
         return true;
     }
 
-    //получение категории по if
+    //получение категории по id
     public Category getCategoryById(Long id) {
         // Используем Optional, чтобы безопасно обрабатывать отсутствие результата
         Category categoryOptional = categoryRepository.findById(id).orElse(null);

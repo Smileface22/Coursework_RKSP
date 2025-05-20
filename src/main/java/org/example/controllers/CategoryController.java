@@ -11,60 +11,61 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-
-@Controller
+@RestController
+@RequestMapping("/api/category")
 public class CategoryController {
 
     @Autowired
     private CategoryService categoryService;
 
-    @GetMapping("/category")
-    public String category(Model model) {
-        model.addAttribute("categories", categoryService.getCategoriesForCurrentUser());
-        return "category";
+    // Получить список категорий (для текущего пользователя)
+    @GetMapping
+    public ResponseEntity<List<Category>> getCategories() {
+        List<Category> categories = categoryService.getCategoriesForCurrentUser();
+        return ResponseEntity.ok(categories);
     }
 
     // Добавить новую категорию
-    @PostMapping("/category")
+    @PostMapping
     public ResponseEntity<String> addCategory(@RequestBody Category category) {
         boolean success = categoryService.addCategory(category);
         if (success) {
             return ResponseEntity.ok("Категория успешно добавлена");
         } else {
-            return ResponseEntity.status(400).body("Категория с таким именем уже существует");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Категория с таким именем уже существует");
         }
     }
 
     // Получить данные категории по её ID
-    @GetMapping("/category/{id}")
+    @GetMapping("/{id}")
     public ResponseEntity<Category> getCategory(@PathVariable Long id) {
         Category category = categoryService.getCategoryById(id);
         if (category != null) {
             return ResponseEntity.ok(category);
         } else {
-            return ResponseEntity.status(404).build(); // Возвращаем 404, если категория не найдена
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
     }
 
-    //редактирование категории
-    @PostMapping("/category/{id}/edit")
+    // Редактировать категорию по ID
+    @PostMapping("/{id}/edit")
     public ResponseEntity<String> updateCategory(@PathVariable Long id, @RequestBody Category updatedCategory) {
         boolean success = categoryService.updateCategory(id, updatedCategory);
         if (success) {
             return ResponseEntity.ok("Категория успешно обновлена");
         } else {
-            return ResponseEntity.status(400).body("Ошибка при обновлении категории");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Ошибка при обновлении категории");
         }
     }
 
-    //удаление категории
-    @DeleteMapping("/category/{id}")
+    // Удалить категорию по ID
+    @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteCategory(@PathVariable Long id) {
         try {
             categoryService.deleteCategoryById(id);
-            return ResponseEntity.ok().build(); // Возвращаем успешный ответ без перенаправления
+            return ResponseEntity.ok().build();
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build(); // Возвращаем ошибку
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 }

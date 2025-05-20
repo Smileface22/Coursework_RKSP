@@ -12,8 +12,8 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-
-@Controller
+@RestController
+@RequestMapping("/api/inventory")
 public class ProductController {
 
     @Autowired
@@ -22,44 +22,44 @@ public class ProductController {
     @Autowired
     private CategoryService categoryService;
 
-    @GetMapping("/inventory")
-    public String showAddProductForm(Model model) {
+    // Получить все продукты
+    @GetMapping
+    public ResponseEntity<List<Product>> getAllProducts() {
         List<Product> products = productService.getAllProducts();
-        // Выводим список продуктов в консоль
-        System.out.println("Список продуктов: " + products);
-        List<Category> categories = categoryService.getCategoriesForCurrentUser();
-        model.addAttribute("products", products);
-        model.addAttribute("categories", categories);
-        return "inventory";
+        return ResponseEntity.ok(products);
     }
 
-    @GetMapping("/inventory/{id}")
+    // Получить продукт по ID
+    @GetMapping("/{id}")
     public ResponseEntity<Product> getProductById(@PathVariable Long id) {
         Product product = productService.getProductByIdForCurrentUser(id);
         if (product != null) {
-            return new ResponseEntity<>(product, HttpStatus.OK); // Возвращаем объект и статус OK
+            return ResponseEntity.ok(product);
         } else {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND); // Возвращаем только статус NOT_FOUND
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
     }
-    // создание товара
-    @PostMapping("/inventory")
-    public ResponseEntity<?> addProduct(@RequestBody Product product) {
+
+    // Добавить новый продукт
+    @PostMapping
+    public ResponseEntity<String> addProduct(@RequestBody Product product) {
         try {
-            productService.saveProduct(product); // Основная логика
+            productService.saveProduct(product);
             return ResponseEntity.ok("Продукт успешно добавлен");
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ошибка: " + e.getMessage());
         }
     }
-    //редиктирование товара
-    @PostMapping("/inventory/{id}/edit")
+
+    // Обновить существующий продукт
+    @PostMapping("/{id}/edit")
     public ResponseEntity<Void> updateProduct(@PathVariable Long id, @RequestBody Product updatedProduct) {
         try {
             productService.updateProduct(id, updatedProduct);
             return ResponseEntity.ok().build();
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

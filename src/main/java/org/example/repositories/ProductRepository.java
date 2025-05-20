@@ -12,8 +12,9 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     Product findByIdAndUser(Long id, User user);
     List<Product> findByUserAndCategoryId(User user, Long categoryId);
 
-    @Query("SELECT SUM(p.stockQuantity) FROM Product p")
-    int sumStockQuantity(); // Суммируем количество всех товаров
-    @Query("SELECT COUNT(p) FROM Product p WHERE p.stockQuantity < :threshold")
-    int countLowStockProducts(int threshold); // Подсчитываем товары с низким уровнем запаса
+    @Query("SELECT SUM(p.stockQuantity) FROM Product p WHERE p.user = :user")
+    int sumStockQuantityByUser(User user);
+
+    @Query("SELECT COUNT(p) FROM Product p WHERE p.stockQuantity < :threshold AND p.user = :user")
+    int countLowStockProductsByUser(User user, int threshold);
 }

@@ -102,16 +102,16 @@ public class OrderService {
     }
 
     // Метод для подсчета заказов за сегодня
-    public Long countOrdersToday() {
+    public Long countOrdersToday(User currentUser) {
         String todayStr = LocalDate.now().format(DATE_FORMATTER);
-        return orderRepository.countByOrderDate(todayStr);
+        return orderRepository.countByUserAndOrderDate(currentUser, todayStr);
     }
 
     // Метод для подсчета заказов за месяц
-    public long countOrdersThisMonth() {
+    public long countOrdersThisMonth(User currentUser) {
         String firstOfMonthStr = LocalDate.now().withDayOfMonth(1).format(DATE_FORMATTER);  // Преобразуем первое число месяца в строковый формат
         String todayStr = LocalDate.now().format(DATE_FORMATTER);  // Текущая дата в строковом формате
-        return orderRepository.countByOrderDateBetween(firstOfMonthStr, todayStr);  // Подсчитываем заказы за месяц
+        return orderRepository.countByUserAndDateRange(currentUser, firstOfMonthStr, todayStr);  // Подсчитываем заказы за месяц
     }
 
 

@@ -1,55 +1,68 @@
 package org.example.controllers;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.example.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.Authentication;
 
-@Controller
+import java.util.Map;
+
+@RestController
+@RequestMapping("/api") // чтобы все запросы шли с префиксом /api, можно убрать, если не нужно
 public class RegistrationController {
+
     @Autowired
     private UserService userService;
 
-    @GetMapping("/login")
-    public String login(Model model) {
-        return "login";
-    }
-
-    @GetMapping("/register")
-    public String registration(Model model) {
-        return "register";
-    }
-
     @PostMapping("/register")
-    public String registerUser(
-            @RequestParam("email") String email,
-            @RequestParam("password") String password,
-            Model model
+    public ResponseEntity<?> registerUser(
+            @RequestBody Map<String, String> userData // принимаем JSON с email и password
     ) {
+        String email = userData.get("email");
+        String password = userData.get("password");
+
         boolean isRegistered = userService.registerUser(email, password);
-        // Регистрируем нового пользователя
+
         if (isRegistered) {
-            return "redirect:/login"; // Если регистрация успешна, перенаправляем на страницу логина
+            // Вернём статус 200 и сообщение об успехе
+            return ResponseEntity.ok(Map.of("message", "Регистрация успешна"));
         } else {
-            model.addAttribute("error", "Пользователь с таким email уже существует");
-            return "register";
+            // Вернём ошибку 400 с сообщением
+            return ResponseEntity.badRequest().body(Map.of("message", "Пользователь с таким email уже существует"));
         }
     }
 
     @PostMapping("/login")
-    public String loginUser(
-            @RequestParam("email") String username,
-            @RequestParam("password") String password,
-            Model model
+    public ResponseEntity<?> loginUser(
+            @RequestBody Map<String, String> userData
     ) {
-        if (userService.login(username, password)) {
-            // Если вход успешный, перенаправляем на главную страницу
-            return "redirect:/dashboard";
+        String email = userData.get("username"); // или "email" — смотри, что клиент посылает
+        String password = userData.get("password");
+
+        if (userService.login(email, password)) {
+            // Можно вернуть токен, либо просто сообщение
+            return ResponseEntity.ok(Map.of("message", "Вход успешен"));
         } else {
-            // Если ошибка, возвращаемся на страницу входа с сообщением
-            model.addAttribute("error", "Неверный email или пароль");
-            return "login";
+            return ResponseEntity.status(401).body(Map.of("message", "Неверный email или пароль"));
         }
+    }
+    @GetMapping("/me")
+    public ResponseEntity<?> getCurrentUser(Authentication authentication) {
+        if (authentication != null && authentication.isAuthenticated()) {
+            return ResponseEntity.ok(Map.of("username", authentication.getName()));
+        } else {
+            return ResponseEntity.status(401).build();
+        }
+    }
+    @PostMapping("/api/logout")
+    public void logout(HttpServletRequest request, HttpServletResponse response, Authentication auth) {
+        if (auth != null) {
+            new SecurityContextLogoutHandler().logout(request, response, auth);
+        }
+        response.setStatus(HttpServletResponse.SC_OK);
     }
 }

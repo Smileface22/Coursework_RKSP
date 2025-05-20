@@ -1,5 +1,6 @@
 package org.example.databases;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -18,10 +19,10 @@ public class Order {
     private User user; // Пользователь, сделавший заказ
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
     private List<OrderItem> orderItems = new ArrayList<>(); // Список товаров в заказе
 
     private float totalAmount; // Общая сумма заказа
-
 
     private String status; // Статус заказа
 
