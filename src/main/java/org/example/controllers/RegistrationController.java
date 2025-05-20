@@ -4,6 +4,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.example.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.web.bind.annotation.*;
@@ -53,9 +55,13 @@ public class RegistrationController {
     @GetMapping("/api/me")
     public ResponseEntity<?> getCurrentUser(Authentication authentication) {
         if (authentication != null && authentication.isAuthenticated()) {
-            return ResponseEntity.ok(Map.of("username", authentication.getName()));
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(Map.of("username", authentication.getName()));
         } else {
-            return ResponseEntity.status(401).build();
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(Map.of("error", "Unauthorized"));
         }
     }
     @PostMapping("/api/logout")
