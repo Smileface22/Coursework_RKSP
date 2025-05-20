@@ -50,7 +50,7 @@ public class RegistrationController {
             return ResponseEntity.status(401).body(Map.of("message", "Неверный email или пароль"));
         }
     }
-    @GetMapping("/me")
+    @GetMapping("/api/me")
     public ResponseEntity<?> getCurrentUser(Authentication authentication) {
         if (authentication != null && authentication.isAuthenticated()) {
             return ResponseEntity.ok(Map.of("username", authentication.getName()));
